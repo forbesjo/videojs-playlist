@@ -3,6 +3,24 @@ var setupAutoadvance = require('./autoadvance.js');
 var isArray = Array.isArray || function(array) {
   return Object.prototype.toString.call(array) === '[object Array]';
 };
+var isInSources = function(arr, src) {
+  var i = 0;
+  var j = 0;
+  var item;
+  var source;
+
+  for (; i < arr.length; i++) {
+    item = arr[i];
+    for (; j < item.sources.length; j++) {
+      source = item.sources[j];
+      if (source && (source === src || source.src === src)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
 
 // factory method to return a new playlist with the following API
 // playlist(["a", "b", "c"]) // setter, ["a", "b", "c"]
@@ -24,13 +42,20 @@ var playlistMaker = function(player, plist) {
     if (plist && isArray(plist)) {
       list = plist.slice();
       player.playlist.currentItem(0);
+
+      window.setTimeout(function() {
+        player.trigger('playlistchange');
+      }, 0);
     }
 
     return list.slice();
   };
 
   playlist.currentItem = function item(index) {
-    if (typeof index === 'number' && index >= 0 && index < list.length) {
+    if (typeof index === 'number' &&
+        currentIndex !== index &&
+        index >= 0 &&
+        index < list.length) {
       currentIndex = index;
       playItem(player, autoadvanceTimeout, list[currentIndex]);
       return currentIndex;
@@ -70,6 +95,14 @@ var playlistMaker = function(player, plist) {
   if (list.length) {
     playlist.currentItem(0);
   }
+
+  player.on('loadstart', function() {
+    var currentSrc = player.currentSrc();
+    if (!isInSources(list, currentSrc)) {
+      currentIndex = -1;
+      setupAutoadvance.resetadvance(player);
+    }
+  });
 
   return playlist;
 };
