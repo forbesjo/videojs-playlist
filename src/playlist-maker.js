@@ -30,12 +30,16 @@ var isInSources = function(arr, src) {
 // playlist.next() // "c"
 // playlist.previous() // "b"
 var playlistMaker = function(player, plist) {
-  var currentIndex = 0;
+  var currentIndex = -1;
   var autoadvanceTimeout = null;
   var list = [];
+  var playlistchangeTimeout;
   var loadFirstItem = function loadFirstItem() {
     if (list.length > 0) {
+      currentIndex = 0;
       playItem(player, autoadvanceTimeout, list[0]);
+    } else {
+      currentIndex = -1;
     }
   };
 
@@ -43,12 +47,17 @@ var playlistMaker = function(player, plist) {
     list = plist.slice();
   }
 
+  player.on('dispose', function() {
+    window.clearTimeout(playlistchangeTimeout);
+    playlistchangeTimeout = null;
+  });
+
   var playlist = function playlist(plist) {
     if (plist && isArray(plist)) {
       list = plist.slice();
       loadFirstItem();
 
-      window.setTimeout(function() {
+      playlistchangeTimeout = window.setTimeout(function() {
         player.trigger('playlistchange');
       }, 0);
     }

@@ -74,6 +74,12 @@ q.test('playlist.currentItem() works as expected', function() {
   q.equal(playlist.currentItem(-Infinity), 2, 'cannot change to an invalid item');
 });
 
+q.test('playlist.currentItem() returns -1 with an empty playlist', function() {
+  var playlist = playlistMaker(playerProxy, []);
+
+  q.equal(playlist.currentItem(), -1, 'we should get a -1 with an empty playlist');
+});
+
 q.test('playlist.currentItem() does not change items if same index is given', function() {
   var player = extend(true, {}, playerProxy);
   var sources = 0;
@@ -197,4 +203,34 @@ q.test('when loading a new playlist, trigger "playlistchange" on the player', fu
   playlist([4,5,6]);
 
   window.setTimeout = oldTimeout;
+});
+
+q.test('cleartimeout on dispose', function() {
+  var oldTimeout = window.setTimeout;
+  var oldClear = window.clearTimeout;
+  var Player = function(proxy) {
+    extend(true, this, proxy);
+  };
+  Player.prototype = Object.create(playerProxy);
+  Player.prototype.constructor = Player;
+  var playlist;
+  var timeout = 1;
+
+  window.setTimeout = function() {
+    return timeout;
+  };
+  window.clearTimeout = function(to) {
+    q.equal(to, timeout, 'we cleared the timeout');
+  };
+
+  player = new Player(videojs.EventEmitter.prototype);
+
+  playlist = playlistMaker(player, [1,2,3]);
+
+  playlist([1,2,3]);
+
+  player.trigger('dispose');
+
+  window.setTimeout = oldTimeout;
+  window.clearTimeout = oldClear;
 });
