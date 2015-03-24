@@ -89,7 +89,7 @@ var setupAutoadvance = require('./autoadvance.js');
 var isArray = Array.isArray || function(array) {
   return Object.prototype.toString.call(array) === '[object Array]';
 };
-var isInSources = function(arr, src) {
+var indexInSources = function(arr, src) {
   var i = 0;
   var j = 0;
   var item;
@@ -100,12 +100,12 @@ var isInSources = function(arr, src) {
     for (j = 0; j < item.sources.length; j++) {
       source = item.sources[j];
       if (source && (source === src || source.src === src)) {
-        return true;
+        return i;
       }
     }
   }
 
-  return false;
+  return -1;
 };
 
 // factory method to return a new playlist with the following API
@@ -164,6 +164,46 @@ var playlistMaker = function(player, plist) {
     return currentIndex;
   };
 
+  // item can be either
+  //  * a string
+  //  * an array of sources, which are either strings or {src, type} objects
+  //  * a playlist item
+  playlist.contains = function contains(item) {
+    return player.playlist.indexOf(item) !== -1;
+  };
+
+  playlist.indexOf = function indexOf(item) {
+    var ret = -1;
+    var sources;
+    var source;
+    var i;
+
+    if (typeof item === 'string') {
+      ret = indexInSources(list, item);
+    } else {
+      if (isArray(item)) {
+        sources = item;
+      } else {
+        sources = item.sources;
+      }
+
+      for (i = 0; i < sources.length; i++) {
+        source = sources[i];
+        if (typeof source === 'string') {
+          ret = indexInSources(list, source);
+        } else {
+          ret = indexInSources(list, source.src);
+        }
+
+        if (ret !== -1) {
+          break;
+        }
+      }
+    }
+
+    return ret;
+  };
+
   playlist.next = function next() {
     var prevIndex = currentIndex;
     // make sure we don't go past the end of the playlist
@@ -196,7 +236,7 @@ var playlistMaker = function(player, plist) {
 
   player.on('loadstart', function() {
     var currentSrc = player.currentSrc();
-    if (!isInSources(list, currentSrc)) {
+    if (!player.playlist.contains(currentSrc)) {
       currentIndex = -1;
       setupAutoadvance.resetadvance(player);
     }
