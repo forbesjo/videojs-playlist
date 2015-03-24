@@ -1,8 +1,39 @@
-var q = QUnit,
-    oldTimeout,
-    playlistMaker = require('../src/playlist-maker.js'),
-    playerProxy = require('./player-proxy.js'),
-    extend = require('node.extend');
+var extend = require('node.extend');
+var q = QUnit;
+var oldTimeout;
+var playlistMaker = require('../src/playlist-maker.js');
+var playerProxy = require('./player-proxy.js');
+var videoList = [{
+  sources: [{
+    src: 'http://media.w3.org/2010/05/sintel/trailer.mp4',
+    type: 'video/mp4'
+  }],
+    poster: 'http://media.w3.org/2010/05/sintel/poster.png'
+}, {
+  sources: [{
+    src: 'http://media.w3.org/2010/05/bunny/trailer.mp4',
+    type: 'video/mp4'
+  }],
+    poster: 'http://media.w3.org/2010/05/bunny/poster.png'
+}, {
+  sources: [{
+    src: 'http://vjs.zencdn.net/v/oceans.mp4',
+    type: 'video/mp4'
+  }],
+    poster: 'http://www.videojs.com/img/poster.jpg'
+}, {
+  sources: [{
+    src: 'http://media.w3.org/2010/05/bunny/movie.mp4',
+    type: 'video/mp4'
+  }],
+    poster: 'http://media.w3.org/2010/05/bunny/poster.png'
+}, {
+  sources: [{
+    src: 'http://media.w3.org/2010/05/video/movie_300.mp4',
+    type: 'video/mp4'
+  }],
+  poster: 'http://media.w3.org/2010/05/video/poster.png'
+}];
 
 q.module('playlist', {
   setup: function() {
@@ -106,6 +137,106 @@ q.test('playlist.currentItem() does not change items if same index is given', fu
   q.equal(sources, 1, 'we did not try to set sources');
 });
 
+q.test('playlist.contains() works as expected', function() {
+  var player = extend(true, {}, playerProxy);
+  var playlist = playlistMaker(player, videoList);
+  player.playlist = playlist;
+
+  q.ok(playlist.contains('http://media.w3.org/2010/05/sintel/trailer.mp4'),
+       'we can ask whether it contains a source string');
+
+  q.ok(playlist.contains(['http://media.w3.org/2010/05/sintel/trailer.mp4']),
+       'we can ask whether it contains a sources list of strings');
+
+  q.ok(playlist.contains([{
+    src: 'http://media.w3.org/2010/05/sintel/trailer.mp4',
+    type: 'video/mp4'
+  }]), 'we can ask whether it contains a sources list of objects');
+
+  q.ok(playlist.contains({
+    sources: ['http://media.w3.org/2010/05/sintel/trailer.mp4']
+  }), 'we can ask whether it contains a playlist item');
+
+  q.ok(playlist.contains({
+    sources: [{
+      src: 'http://media.w3.org/2010/05/sintel/trailer.mp4',
+      type: 'video/mp4'
+    }]
+  }), 'we can ask whether it contains a playlist item');
+
+  q.ok(!playlist.contains('http://media.w3.org/2010/05/sintel/poster.png'),
+       'we get false for a non-existent source string');
+
+  q.ok(!playlist.contains(['http://media.w3.org/2010/05/sintel/poster.png']),
+       'we get false for a non-existent source list of strings');
+
+  q.ok(!playlist.contains([{
+    src: 'http://media.w3.org/2010/05/sintel/poster.png',
+    type: 'video/mp4'
+  }]), 'we get false for a non-existent source list of objects');
+
+  q.ok(!playlist.contains({
+    sources: ['http://media.w3.org/2010/05/sintel/poster.png']
+  }), 'we can ask whether it contains a playlist item');
+
+  q.ok(!playlist.contains({
+    sources: [{
+      src: 'http://media.w3.org/2010/05/sintel/poster.png',
+      type: 'video/mp4'
+    }]
+  }), 'we get false for a non-existent playlist item');
+});
+
+q.test('playlist.indexOf() works as expected', function() {
+  var player = extend(true, {}, playerProxy);
+  var playlist = playlistMaker(player, videoList);
+  player.playlist = playlist;
+
+  q.equal(playlist.indexOf('http://media.w3.org/2010/05/sintel/trailer.mp4'),
+          0, 'sintel trailer is first item');
+
+  q.equal(playlist.indexOf(['http://media.w3.org/2010/05/bunny/trailer.mp4']),
+          1, 'bunny trailer is second item');
+
+  q.equal(playlist.indexOf([{
+    src: 'http://vjs.zencdn.net/v/oceans.mp4',
+    type: 'video/mp4'
+  }]), 2, 'oceans is third item');
+
+  q.equal(playlist.indexOf({
+    sources: ['http://media.w3.org/2010/05/bunny/movie.mp4']
+  }), 3, 'bunny movie is fourth item');
+
+  q.equal(playlist.indexOf({
+    sources: [{
+      src: 'http://media.w3.org/2010/05/video/movie_300.mp4',
+      type: 'video/mp4'
+    }]
+  }), 4, 'timer video is fifth item');
+
+  q.equal(playlist.indexOf('http://media.w3.org/2010/05/sintel/poster.png'),
+          -1, 'poster.png does not exist');
+
+  q.equal(playlist.indexOf(['http://media.w3.org/2010/05/sintel/poster.png']),
+          -1, 'poster.png does not exist');
+
+  q.equal(playlist.indexOf([{
+    src: 'http://media.w3.org/2010/05/sintel/poster.png',
+    type: 'video/mp4'
+  }]), -1, 'poster.png does not exist');
+
+  q.equal(playlist.indexOf({
+    sources: ['http://media.w3.org/2010/05/sintel/poster.png']
+  }), -1, 'poster.png does not exist');
+
+  q.equal(playlist.indexOf({
+    sources: [{
+      src: 'http://media.w3.org/2010/05/sintel/poster.png',
+      type: 'video/mp4'
+    }]
+  }), -1, 'poster.png does not exist');
+});
+
 q.test('playlist.next() works as expected', function() {
   var playlist = playlistMaker(playerProxy, [1,2,3]);
 
@@ -134,7 +265,7 @@ q.test('playlist.previous() works as expected', function() {
   q.equal(playlist.previous(), undefined, 'we get nothing back if we try to go out of bounds');
 });
 
-q.test('loading a non-playlist video will cancel autoadvanec and set index of -1', function() {
+q.test('loading a non-playlist video will cancel autoadvance and set index of -1', function() {
   var Player = function(proxy) {
     extend(true, this, proxy);
   };
@@ -159,6 +290,8 @@ q.test('loading a non-playlist video will cancel autoadvanec and set index of -1
     }],
     poster: 'http://media.w3.org/2010/05/bunny/poster.png'
   }]);
+
+  player.playlist = playlist;
 
   player.currentSrc = function() {
     return 'http://vjs.zencdn.net/v/oceans.mp4';
