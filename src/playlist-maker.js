@@ -66,6 +66,8 @@ var playlistMaker = function(player, plist) {
   };
 
   playlist.currentItem = function item(index) {
+    var src;
+
     if (typeof index === 'number' &&
         currentIndex !== index &&
         index >= 0 &&
@@ -74,6 +76,9 @@ var playlistMaker = function(player, plist) {
       playItem(player, autoadvanceTimeout, list[currentIndex]);
       return currentIndex;
     }
+
+    src = player.currentSrc() || '';
+    currentIndex = playlist.indexOf(src);
 
     return currentIndex;
   };
@@ -149,9 +154,7 @@ var playlistMaker = function(player, plist) {
   loadFirstItem();
 
   player.on('loadstart', function() {
-    var currentSrc = player.currentSrc();
-    if (!player.playlist.contains(currentSrc)) {
-      currentIndex = -1;
+    if (player.playlist.currentItem() === -1) {
       setupAutoadvance.resetadvance(player);
     }
   });
